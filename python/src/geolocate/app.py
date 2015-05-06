@@ -42,7 +42,7 @@ def ls_methods(args):
 	for x in gimethod_subclasses():
 		print '\t' + x.__name__ 
 
-def create_folds(args): 
+def create_folds(args):
 	parser = argparse.ArgumentParser(prog='geoinf create_folds', description='creates a set of data partitions for evaluating with cross-fold validation')
 	parser.add_argument('-f', '--force', help='overwrite the output model directory if it already exists')
 	parser.add_argument('dataset_dir', help='a directory containing a geoinference dataset')
@@ -87,7 +87,7 @@ def create_folds(args):
                 # The users.json.gz file with the gold data (used for testing)
 		gold_loc_fh = gzip.open(os.path.join(args.fold_dir, fold_name + ".users.json.gz"), 'w')
                 output_posts_file_handles.append(gold_loc_fh)
-                cf_info_fh.write("%s\t%s.post-ids.txt\t%s.user-ids.txt\t%s.users.json.gz\n" 
+                cf_info_fh.write("%s\t%s.post-ids.txt\t%s.user-ids.txt\t%s.users.json.gz\n"
                                  % (fold_name, fold_name, fold_name, fold_name))
         cf_info_fh.close()
 
@@ -118,20 +118,20 @@ def create_folds(args):
                         num_gold_posts += len(gold_posts)
                         fold_to_use = num_gold_users % num_folds
                         num_gold_users += 1
-                        
+
                         output_held_out_user_ids_file_handles[fold_to_use].write("%s\n" % user['user_id'])
 
                         for post_id, loc in gold_post_id_to_loc.iteritems():
                                 output_held_out_post_ids_file_handles[fold_to_use].write("%d\n" % post_id)
                                 output_gold_loc_file_handles[fold_to_use].write("%d\t%s\t%f\t%f\n" % (post_id, user_id, loc[0], loc[1]))
                         # Lazily mutate the existing user object and the dump
-                        # that object to the fold's user.json.gz 
+                        # that object to the fold's user.json.gz
                         user['posts'] = gold_posts
                         output_posts_file_handles[fold_to_use].write("%s\n" % simplejson.dumps(user))
-                        
+
                 num_users += 1
 		if num_users % 100000 == 0:
-			logger.debug('Processed %d users, saw %d gold so far (%d posts of %d (%f))' 
+			logger.debug('Processed %d users, saw %d gold so far (%d posts of %d (%f))'
                                      % (num_users, num_gold_users, num_gold_posts, num_posts,
                                         float(num_gold_posts) / num_posts))
 

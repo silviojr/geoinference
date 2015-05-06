@@ -51,27 +51,34 @@ def fake_post(user_id, lat, lon):
 	}
 	return d
 
+def fake_user(user_id, lat, lon):
+	posts = [fake_post(user_id, lat,lon)]
+	user = {
+		"user_id":user_id,
+		"id":user_id,
+	    "posts":posts
+	}
+	return user
+
 class SparseDataset(object):
 	"""
 	This class encapsulates access to datasets.
 	"""
 
-	def __init(self, settings_file="dataset.json",
+	def __init__(self, settings,
 			   location_users_file="users.txt", network_file="network_file.txt",
 			   bi_network_file="bi_network_file.txt", excluded_users=set()):
 
-		if os.path.exists(settings_file):
-			self._settings = jsonlib.load(open(settings_file,'r'))
-		else:
-			self._settings = {}
+
+		self._settings = settings
 
 		# prepare for all data
-		self._users_fname = location_users_file
 		self._users_with_locations_fname = location_users_file
 		self._mention_network_fname = network_file
 		self._bi_mention_network_fname = bi_network_file
 		self.excluded_users = excluded_users
 		self._users_real_locations = {}
+		self.graphs = {}
 		for line in open(self._users_with_locations_fname):
 			user_id, lat, lon  = line.split(';')
 			lat = float(lat)
@@ -86,9 +93,9 @@ class SparseDataset(object):
 		Return fake posts from the dataset
 		"""
 		for user_id in self._users_real_locations:
-			coordenadas = self._users_real_locations[user_id]
-			yield {"id_str":user_id, "geo": {'coordinates': coordenadas},
-				"user":{"id":user_id}}
+			lat, lon = self._users_real_locations[user_id]
+			yield fake_post(user_id, lat, lon)
+
 
 
 	def user_iter(self):
@@ -100,14 +107,7 @@ class SparseDataset(object):
 
 		for user in self._users_real_locations:
 			lat, lon = self._users_real_locations[user]
-			posts = [fake_post(user, lat, lon)]
-			user['user_id'] = user
-			user['posts'] = posts
-
-			yield user
-
-
-
+			yield fake_user(user, lat, lon)
 
 	def __iter__(self):
 		"""
@@ -133,13 +133,9 @@ class SparseDataset(object):
 		Return dictionary of users to their locations, containing only
 		users who have already self-reported their own location.  
 		"""
-		fh = gzip.open(self._users_fname,'r')
-
-		for line in fh:
-			user = self.load_user(line)
-			yield user
-                fh.close()
-
+		for user in self._users_real_locations:
+			lat, lon = self._users_real_locations[user]
+			yield fake_user(user, lat, lon)
 
 	def mention_network(self):
 		"""
@@ -155,45 +151,54 @@ class SparseDataset(object):
 		return self.mention_network(bidirectional=True,directed=False,weighted=False)
 
 	def build_graph(self,fname,directed,weighted):
+		print "building graph... %s:%s:%s" % (fname, directed, weighted)
 		command = ("wc -l %s" %fname)
 		process = subprocess.Popen(command, stdout=subprocess.PIPE,stderr=None, shell=True)
 		output = process.communicate()
 		graph_edge_capacity = int(output[0].split()[0]) + 1
+		print "Numero de edges %s" % graph_edge_capacity
 		G = zen.edgelist.read(fname, weighted=weighted, ignore_duplicate_edges=True, merge_graph=zen.Graph(directed=directed, edge_capacity=graph_edge_capacity,edge_list_capacity=1))
+		print "Fim do grafo"
 		return G
 		
 
 	def mention_network(self, bidirectional=False, directed=False, weighted=False):
+		tupla = (bidirectional, directed, weighted)
+		if tupla in self.graphs:
+			return self.graphs[tupla]
 		"""
 		Return the mention network for the dataset.
 		"""
-                if bidirectional:
-                        if directed:
-                                if weighted:
-                                        fname = os.path.join(self._dataset_dir, 'bi_mention_network.directed.weighted.elist')
-					return self.build_graph(fname,directed=True,weighted=True)
-                                else:
-                                        pass
-                        else:
-                                if weighted:
-                                        fname = os.path.join(self._dataset_dir, 'bi_mention_network.weighted.elist')
-					return self.build_graph(fname,directed=False,weighted=True)
-
-                                else:
-                                        fname = os.path.join(self._dataset_dir, 'bi_mention_network.elist')
-					return self.build_graph(fname,directed=False, weighted=False)
-                else:
-                        if directed:
-                                if weighted:
-                                        pass
-                                else:
-                                        fname = os.path.join(self._dataset_dir, 'mention_network.elist')
-					return self.build_graph(fname,directed=True, weighted=False)
-                        else:
-                                if weighted:
-                                        pass
-                                else:
-                                        pass
+		if bidirectional:
+			if directed:
+				if weighted:
+					fname = self._bi_mention_network_fname # os.path.join(self._dataset_dir, 'bi_mention_network.directed.weighted.elist')
+					self.graphs[tupla] = self.build_graph(fname,directed=True,weighted=True)
+					return self.graphs[tupla]
+				else:
+					pass
+			else:
+				if weighted:
+					fname = self._bi_mention_network_fname #os.path.join(self._dataset_dir, 'bi_mention_network.weighted.elist')
+					self.graphs[tupla] = self.build_graph(fname,directed=False,weighted=True)
+					return self.graphs[tupla]
+				else:
+					fname = self._bi_mention_network_fname #os.path.join(self._dataset_dir, 'bi_mention_network.elist')
+					self.graphs[tupla] =  self.build_graph(fname,directed=False, weighted=False)
+					return self.graphs[tupla]
+		else:
+			if directed:
+				if weighted:
+					pass
+				else:
+					fname = self._mention_network_fname #os.path.join(self._dataset_dir, 'mention_network.elist')
+					self.graphs[tupla] =  self.build_graph(fname,directed=True, weighted=False)
+					return self.graphs[tupla]
+			else:
+				if weighted:
+					pass
+				else:
+					pass
 
 
         def load_user(self, line):

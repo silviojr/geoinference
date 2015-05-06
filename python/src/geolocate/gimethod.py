@@ -10,7 +10,7 @@ import abc
 import glob
 
 import zen
-
+from geolocate import *
 import logging
 
 logger = logging.getLogger(os.path.basename(__file__))
@@ -21,6 +21,7 @@ def __import_gimethod_subclasses():
 	import gimethods
 
 	dirpath = os.path.dirname(gimethods.__file__)
+
 	modules = []
 
 	logger.debug('searching for modules in %s' % dirpath)
@@ -32,15 +33,18 @@ def __import_gimethod_subclasses():
 		modules += ['geolocate.gimethods.%s.%s' % (d,m) for m in mods]
 
 	# load all the modules
+	print dir()
 	logger.debug('loading all modules found')
 	for m in modules:
-		import_module('%s' % m)
+		print 'Importandos %s' % m
+		globals()[m.split('.')[-2]] = import_module('%s' % m)
+	print dir()
 
 	# done
 
 def gimethod_subclasses():
 	global __subclass_import_completed
-
+	GIMethod.__subclasses__()
 	if not __subclass_import_completed:
 		logger.debug('building classes')
 		__import_gimethod_subclasses()

@@ -39,7 +39,6 @@ class Davis_Jr_et_al_Model(GIModel):
         else:
             return None
 
-
     def infer_posts_by_user(self, posts):
         if len(posts) == 0:
             return None
@@ -81,13 +80,13 @@ class Davis_Jr_et_al_Method(GIMethod):
         # We use the default name-to-location mapping unless the user has
         # specified otherwise.
         can_use_home_loc = True
-        if 'location_source' in settings and not settings['location_source'] == 'geo-median':
-            self.geocoder = geocoder.Geocoder(dataset=settings['location_source'])
-        else:
-            self.geocoder = geocoder.Geocoder()
-            can_use_home_loc = False
+        #if 'location_source' in settings and not settings['location_source'] == 'geo-median':
+        #    self.geocoder = geocoder.Geocoder(dataset=settings['location_source'])
+        #else:
+        #    self.geocoder = geocoder.Geocoder()
+        #    can_use_home_loc = False
         
-        min_location_votes = 2
+        min_location_votes = 1
         if 'min_location_votes' in settings:
             min_location_votes = int(settings['min_location_votes'])
 
@@ -129,12 +128,13 @@ class Davis_Jr_et_al_Method(GIMethod):
             # Skip the posts of users who aren't in the mention network.  This
             # is potentially inefficient, but there's currently no support for
             # iterating by user-id.
-            if not user_id in all_users:
+            if user_id not in all_users:
                 continue
 
             # This strategy returns null if no location was found
-            home_loc = self.get_location(user["posts"], posts_to_use, can_use_home_loc)
-            if not home_loc is None:
+            #home_loc = self.get_location(user["posts"], posts_to_use, can_use_home_loc)
+            home_loc = dataset._users_real_locations[user_id]
+            if home_loc is not None and user_id not in dataset.excluded_users:
                 user_to_gold_loc[user_id] = home_loc
                 #last_seen_user = user_id
             num_users_seen += 1
@@ -142,9 +142,11 @@ class Davis_Jr_et_al_Method(GIMethod):
                 LOGGER.debug('Seen %d/%d users, located %d (%d geo, %d geo-ip, %d loc field)' % (num_users_seen, len(all_users), len(user_to_gold_loc), self.geo, self.geoip, self.loc))
                 #LOGGER.debug("check for %s" % last_seen_user)
                 #break
-        
+        LOGGER.debug('Seen %d/%d users, located %d (%d geo, %d geo-ip, %d loc field)'
+                     % (num_users_seen, len(all_users), len(user_to_gold_loc), self.geo, self.geoip, self.loc))
         # Once we have a gold-standard set of locations, infer the locations of
         # all other users on the basis of their friends
+        located_friends = 0
         for user_id in all_users:
             if user_id in user_to_gold_loc:
                 self.user_id_to_location[user_id] = user_to_gold_loc[user_id]
@@ -153,6 +155,8 @@ class Davis_Jr_et_al_Method(GIMethod):
             #LOGGER.debug("Testing %s" % user_id)
 
             neighbors = mention_network.neighbors(user_id)
+
+
             
             # Check that the user's ego network is within the prescribed bounds
             if len(neighbors) < min_friends or len(neighbors) > max_friends:
@@ -172,15 +176,20 @@ class Davis_Jr_et_al_Method(GIMethod):
             if len(locationCounts) == 0:
                 #print "No locatable friends"
                 continue
-            
+
+
             # Choose the most common, arbitrarily breaking ties.
-            most_common_loc = locationCounts.most_common(1)[0]
+            most_common_loc = locationCounts.most_common(1)[0][0]
             
             # Ensure that at least the minimum number of friends had this
             # location
+
             if locationCounts[most_common_loc] < min_location_votes:
                 #print "Not enough votes"
                 continue
+
+            located_friends += 1
+            #print '%s:%s' % (most_common_loc, locationCounts[most_common_loc])
 
             #print "Made it through %s" % user_id
             
@@ -189,7 +198,7 @@ class Davis_Jr_et_al_Method(GIMethod):
             self.user_id_to_location[user_id] = most_common_loc
 
 
-        LOGGER.debug('Inferred home locations of %d users' % len(self.user_id_to_location))
+        LOGGER.debug('Inferred home locations of %s users' % located_friends)
 
         if not model_dir is None:
             #fh = open(os.path.join(model_dir, 'davis-jr-model.pickle'), 'w')
