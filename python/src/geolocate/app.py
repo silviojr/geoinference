@@ -72,7 +72,7 @@ def create_folds(args):
 
 	for i in range(0, num_folds):
 		fold_name = "fold_%d" % i
-                # All the IDs of the gold posts in this fold are written here
+                # All the IDs of the gold posts in this fold ar e written here
 		fold_posts_ids_fh = open(os.path.join(args.fold_dir, fold_name + ".post-ids.txt"), 'w')
                 output_held_out_post_ids_file_handles.append(fold_posts_ids_fh)
 
