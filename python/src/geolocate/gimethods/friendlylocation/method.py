@@ -29,6 +29,7 @@ from geolocate.validate import set_counter
 from geolocate.geocoder import Geocoder
 import os
 import os.path
+from haversine import haversine
 
 LOGGER = logging.getLogger(__name__)
 
@@ -609,11 +610,12 @@ class FriendlyLocation(GIMethod, network):
 		self.tree = DecisionTreeRegressor(min_samples_leaf=min_samp_leaf) # the classifier
 		LOGGER.debug('geocoder')
 		#LocRes = Geocoder()
+		'''
                 if 'location_source' in settings:
                     LocRes = Geocoder(dataset=settings['location_source'])
                 else:
                     LocRes = Geocoder()
-
+		'''
 
 		LOGGER.debug('loading mention network')
 		self.X = dataset.mention_network(bidirectional=True, directed=True, weighted=True)
@@ -668,6 +670,7 @@ class FriendlyLocation(GIMethod, network):
 				#if not l_a:	continue
 			self.add_user_data(_id, l_a, {})				
 			le = utils.location_error(l_a, loc, LocRes)
+			le = haversine(l_a, loc)
 			self.set_loc_err(_id, le)
 
 			# remove mentions of itself
