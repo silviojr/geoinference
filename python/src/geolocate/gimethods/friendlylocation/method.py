@@ -639,7 +639,7 @@ class FriendlyLocation(GIMethod, network):
 			#	print c
 			c2 = 0
 			for uid2, loc2 in user_loc_list:
-				if not c2 == c:
+				if c2 > c: #mudei isso aqui
 					if self.X.has_edge(uid1, uid2):
 						self.actEdgesTuples.append((uid1, uid2))
 					distance = round(utils.distance(loc1, loc2), 1)
