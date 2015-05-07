@@ -85,9 +85,10 @@ def cross_validate():
 	try:
 		with open(args.method_settings, 'r') as fh:
 			for line in fh:
-				setting = json.load(line)
+				setting = json.loads(line.strip())
 				list_of_settings.append(setting)
-	except:
+	except Exception,e:
+		print e
 		pass
 	#make sure there exists at least one empty setting
 	if len(list_of_settings) == 0:
@@ -95,8 +96,7 @@ def cross_validate():
 
 
 	for settings in list_of_settings:
-		settings = list_of_settings[0]
-
+		print "=======================SETTINGS: %s==============================" % settings
 		location_source = args.location_source
 		if location_source:
 				logger.debug('Using %s as the source of ground truth location' % location_source)
@@ -123,15 +123,29 @@ def cross_validate():
 		else:
 				training_data = SparseDataset(args.dataset_dir, excluded_users=folds[0])
 		'''
+
+
+		method_results_dir = "metodo=%s" % args.method_name.split("_")[0]
+		for setting_field in settings:
+			method_results_dir += "-%s=%s" % (setting_field, settings[setting_field])
+
 		if args.network_file:
 			training_data = SparseDataset(settings = settings,
 			                              location_users_file=args.users_file,
 			                              network_file=args.network_file)
+			method_results_dir += "-network=%s" % args.network_file
 
 		if args.bi_network_file:
 			training_data = SparseDataset(settings = settings,
 			                              location_users_file=args.users_file,
 			                              bi_network_file=args.bi_network_file)
+			method_results_dir += "-binetwork=%s" % args.bi_network_file.split("/")[-1]
+
+
+		try:
+			os.makedirs(os.path.join(args.results_dir, method_results_dir))
+		except:
+			pass
 
 		for fold_number, fold_users in enumerate(folds):
 
@@ -153,7 +167,9 @@ def cross_validate():
 
 			logger.debug("Writing results to %s" % (os.path.join(args.results_dir, fold_name )))
 
-			output_file = open( os.path.join(args.results_dir, "fold_%s" % fold_number), "w")
+
+
+			output_file = open( os.path.join(args.results_dir, method_results_dir , "fold_%s" % fold_number), "w")
 			total_fold = len(fold_users)
 			preditos = 0
 			acertos = 0

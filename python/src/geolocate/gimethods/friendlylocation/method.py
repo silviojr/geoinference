@@ -669,7 +669,7 @@ class FriendlyLocation(GIMethod, network):
 			l_a = loc
 				#if not l_a:	continue
 			self.add_user_data(_id, l_a, {})				
-			le = utils.location_error(l_a, loc, LocRes)
+			#le = utils.location_error(l_a, loc, LocRes)
 			le = haversine(l_a, loc)
 			self.set_loc_err(_id, le)
 
