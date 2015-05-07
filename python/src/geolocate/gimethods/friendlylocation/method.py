@@ -635,10 +635,10 @@ class FriendlyLocation(GIMethod, network):
 		c = 0
 		LOGGER.debug('sampling stranger edges and actual edges')
 		for uid1, loc1 in user_loc_list:
-			#if c % 100 == 0:
-			#	print c
-			c2 = 0
-			for uid2, loc2 in user_loc_list:
+			if c % 100 == 0:
+				print c
+			c2 = c + 1
+			for uid2, loc2 in user_loc_list[c2:]:
 				if c2 > c: #mudei isso aqui
 					if self.X.has_edge(uid1, uid2):
 						self.actEdgesTuples.append((uid1, uid2))
