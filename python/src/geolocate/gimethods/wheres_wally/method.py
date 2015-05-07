@@ -91,10 +91,11 @@ class Wheres_Wally(GIMethod):
         # Initialize the geocoder, which we'll use to resolve location strings.
         # We use the default name-to-location mapping unless the user has
         # specified otherwise.
-        if 'location_source' in settings:
-            self.geocoder = Geocoder(dataset=settings['location_source'])
-        else:
-            self.geocoder = Geocoder()
+
+        #if 'location_source' in settings:
+        #    self.geocoder = Geocoder(dataset=settings['location_source'])
+        #else:
+        #    self.geocoder = Geocoder()
 
 
         # NOTE: The original paper used the directional friends/followers
@@ -133,7 +134,7 @@ class Wheres_Wally(GIMethod):
             # underlying lat/lon values).  Here, use the Geocoder to map the
             # lat/lon to a name and then back to a canonical lat/lon for that
             # name           
-            canonical_lat_lon = self.geocoder.canonicalize(home_loc[0], home_loc[1])
+            canonical_lat_lon = home_loc
 
             location_counts[canonical_lat_lon] += 1
 
